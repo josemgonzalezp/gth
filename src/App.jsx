@@ -1,68 +1,75 @@
 import { useState } from "react";
+import { getSecretNumber, checkPlay, validatePlay } from "./utils/utils";
+import Header from "./components/Header";
+import PlayInfo from "./components/PlayInfo";
+import ConfettiEffect from "./components/ConfettiEffect";
 
-const guessNumber = [0, 0, 0, 0];
-
-for (let i = 0; i < guessNumber.length; i++) {
-    guessNumber[i] = i == 0 ? getRandomInt(1, 9) : getRandomInt(0, 9);
-}
-
+const guessNumber = getSecretNumber(4);
 console.log(guessNumber);
-
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
-}
 
 const App = () => {
     const [number, setNumber] = useState("");
-    const [jugadas, setJugadas] = useState([]);
+    const [plays, setPlays] = useState([]);
+    const [gameState, setGameState] = useState("playing");
 
     const handleClick = () => {
-        const aryInput = Array.from(number);
-        let regulares = 0;
-        let buenos = 0;
+        if (gameState != "playing") return false;
 
-        aryInput.forEach((digit, digitIndex) => {
-            if (guessNumber.includes(parseInt(digit))) {
-                if (guessNumber[digitIndex] == parseInt(digit)) {
-                    buenos++;
-                } else {
-                    regulares++;
-                }
-            }
-        });
+        const playedNumber = parseInt(number);
+        if (!validatePlay(playedNumber)) {
+            setNumber("");
+            return;
+        }
 
-        setJugadas((jugadas) => [...jugadas, { number, buenos, regulares }]);
+        const result = checkPlay(guessNumber, parseInt(playedNumber));
+        setPlays((plays) => [
+            ...plays,
+            {
+                number: playedNumber,
+                good: result.good,
+                regular: result.regular,
+            },
+        ]);
+
+        if (result.good == 4) {
+            setGameState("win");
+        }
+
         setNumber("");
     };
+
     return (
-        <div className="bg-black min-h-screen p-4 flex flex-col justify-between">
-            <header className="h-10 w-full">
-                <h1 className="text-2xl text-white text-center">
-                    Guess The Number
-                </h1>
-            </header>
-            <main className="w-full mt-4 mb-auto h-10">
-                <section className="w-full flex flex-row gap-4 justify-center">
+        <div className="min-h-screen bg-purple-700">
+            <Header />
+            <main className="container mx-auto">
+                <section className="w-full flex flex-row gap-4 justify-center mt-8 px-4">
                     <input
+                        autoFocus
                         value={number}
                         onChange={(e) => setNumber(e.target.value)}
-                        type="nunber"
-                        min={1000}
-                        max={9999}
-                        className="w-20 rounded-sm p-2 text-center tracking-widest text-gray-700"
+                        type="number"
+                        className="w-24 rounded-sm p-2 text-center tracking-widest text-gray-700"
                     />
                     <button
-                        className="w-20 rounded-sm p-2 text-center bg-gray-700 text-white"
+                        className="w-24 rounded-sm p-2 text-center bg-gray-500 text-white border-white border-2"
                         onClick={handleClick}
                     >
                         Jugar
                     </button>
                 </section>
+
+                <section className="w-full flex flex-col gap-2 justify-center items-center mt-8 px-4">
+                    {plays.length > 0 &&
+                        plays.map((play, playIndex) => {
+                            return <PlayInfo key={playIndex} play={play} />;
+                        })}
+                </section>
             </main>
-            <footer className="h-10">
-                <p className="text-2xl text-center text-white">IdoSoft</p>
+            {gameState === "win" && <ConfettiEffect />}
+            <footer className="fixed bottom-0 left-0 z-20 w-full p-4 border-t border-gray-200 shadow md:flex md:items-center md:justify-between md:p-6 dark:border-gray-600">
+                <p className="text-sm text-center text-white w-full">
+                    © {new Date().getFullYear()} - IdoSoft
+                </p>
             </footer>
         </div>
     );
